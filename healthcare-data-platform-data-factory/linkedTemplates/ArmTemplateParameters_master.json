@@ -29,6 +29,9 @@
 		"LS_ADF_to_NeonPostgreSQL_properties_typeProperties_username": {
 			"value": "neondb_owner"
 		},
+		"LS_ADF_to_AzureDatabricks_properties_typeProperties_existingClusterId": {
+			"value": "1027-083815-3wtriahn"
+		},
 		"containerUri": {
 			"value": ""
 		},
