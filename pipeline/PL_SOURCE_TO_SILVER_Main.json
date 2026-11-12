@@ -158,7 +158,7 @@
 			},
 			"pipeline_name": {
 				"type": "string",
-				"defaultValue": "'a2'"
+				"defaultValue": "'a3'"
 			}
 		},
 		"variables": {
