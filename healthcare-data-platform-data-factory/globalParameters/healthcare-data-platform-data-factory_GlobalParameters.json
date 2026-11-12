@@ -1,0 +1,14 @@
+{
+	"email_recipients": {
+		"type": "string",
+		"value": "abc.xyz@gmail.com"
+	},
+	"ENV": {
+		"type": "string",
+		"value": "DEV"
+	},
+	"logic_app_url": {
+		"type": "string",
+		"value": "https://prod.centralindia.logic.azure.com:443/workflows"
+	}
+}
