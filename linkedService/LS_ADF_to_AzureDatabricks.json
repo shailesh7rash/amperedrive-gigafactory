@@ -1,0 +1,19 @@
+{
+	"name": "LS_ADF_to_AzureDatabricks",
+	"properties": {
+		"annotations": [],
+		"type": "AzureDatabricks",
+		"typeProperties": {
+			"domain": "https://adb-7405607839836853.13.azuredatabricks.net",
+			"accessToken": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "LS_ADF_to_AzureKeyVault",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "adg-adf-databricks-ls-token"
+			},
+			"existingClusterId": "1027-083815-3wtriahn"
+		}
+	}
+}
