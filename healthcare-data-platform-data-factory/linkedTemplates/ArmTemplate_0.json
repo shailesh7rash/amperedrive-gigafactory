@@ -15,18 +15,6 @@
 			"type": "string",
 			"defaultValue": "https://healthcare-dp-key-vault.vault.azure.net/"
 		},
-		"LS_ADF_to_NeonPostgreSQL_properties_typeProperties_server": {
-			"type": "string",
-			"defaultValue": "ep-fragrant-smoke-b328e4fm-pooler.c-4.ap-southeast-1.aws.neon.tech"
-		},
-		"LS_ADF_to_NeonPostgreSQL_properties_typeProperties_database": {
-			"type": "string",
-			"defaultValue": "neondb"
-		},
-		"LS_ADF_to_NeonPostgreSQL_properties_typeProperties_username": {
-			"type": "string",
-			"defaultValue": "neondb_owner"
-		},
 		"LS_ADF_to_AzureSqlDB_properties_typeProperties_server": {
 			"type": "string",
 			"defaultValue": "healthcare-data-platform-server.database.windows.net"
@@ -38,6 +26,18 @@
 		"LS_ADF_to_AzureSqlDB_properties_typeProperties_userName": {
 			"type": "string",
 			"defaultValue": "hcp-sql-db-user"
+		},
+		"LS_ADF_to_NeonPostgreSQL_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "ep-fragrant-smoke-b328e4fm-pooler.c-4.ap-southeast-1.aws.neon.tech"
+		},
+		"LS_ADF_to_NeonPostgreSQL_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "neondb"
+		},
+		"LS_ADF_to_NeonPostgreSQL_properties_typeProperties_username": {
+			"type": "string",
+			"defaultValue": "neondb_owner"
 		}
 	},
 	"variables": {
@@ -69,34 +69,6 @@
 				}
 			},
 			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/LS_ADF_to_NeonPostgreSQL')]",
-			"type": "Microsoft.DataFactory/factories/linkedServices",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"annotations": [],
-				"type": "PostgreSqlV2",
-				"typeProperties": {
-					"server": "[parameters('LS_ADF_to_NeonPostgreSQL_properties_typeProperties_server')]",
-					"port": 5432,
-					"database": "[parameters('LS_ADF_to_NeonPostgreSQL_properties_typeProperties_database')]",
-					"username": "[parameters('LS_ADF_to_NeonPostgreSQL_properties_typeProperties_username')]",
-					"password": {
-						"type": "AzureKeyVaultSecret",
-						"store": {
-							"referenceName": "LS_ADF_to_AzureKeyVault",
-							"type": "LinkedServiceReference"
-						},
-						"secretName": "postgres-adg-password"
-					},
-					"sslMode": 2,
-					"authenticationType": "Basic"
-				}
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/LS_ADF_to_AzureKeyVault')]"
-			]
 		},
 		{
 			"name": "[concat(parameters('factoryName'), '/DS_Postgre_to_ADLS_Sink_Parquet')]",
@@ -166,21 +138,31 @@
 			]
 		},
 		{
-			"name": "[concat(parameters('factoryName'), '/DS_PostgreSql')]",
-			"type": "Microsoft.DataFactory/factories/datasets",
+			"name": "[concat(parameters('factoryName'), '/LS_ADF_to_NeonPostgreSQL')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
 			"apiVersion": "2018-06-01",
 			"properties": {
-				"linkedServiceName": {
-					"referenceName": "LS_ADF_to_NeonPostgreSQL",
-					"type": "LinkedServiceReference"
-				},
 				"annotations": [],
-				"type": "PostgreSqlV2Table",
-				"schema": [],
-				"typeProperties": {}
+				"type": "PostgreSqlV2",
+				"typeProperties": {
+					"server": "[parameters('LS_ADF_to_NeonPostgreSQL_properties_typeProperties_server')]",
+					"port": 5432,
+					"database": "[parameters('LS_ADF_to_NeonPostgreSQL_properties_typeProperties_database')]",
+					"username": "[parameters('LS_ADF_to_NeonPostgreSQL_properties_typeProperties_username')]",
+					"password": {
+						"type": "AzureKeyVaultSecret",
+						"store": {
+							"referenceName": "LS_ADF_to_AzureKeyVault",
+							"type": "LinkedServiceReference"
+						},
+						"secretName": "postgres-adg-password"
+					},
+					"sslMode": 2,
+					"authenticationType": "Basic"
+				}
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/LS_ADF_to_NeonPostgreSQL')]"
+				"[concat(variables('factoryId'), '/linkedServices/LS_ADF_to_AzureKeyVault')]"
 			]
 		},
 		{
@@ -202,15 +184,93 @@
 			]
 		},
 		{
-			"name": "[concat(parameters('factoryName'), '/test_pipeline')]",
+			"name": "[concat(parameters('factoryName'), '/DS_PostgreSql')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_ADF_to_NeonPostgreSQL",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "PostgreSqlV2Table",
+				"schema": [],
+				"typeProperties": {}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_ADF_to_NeonPostgreSQL')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_SOURCE_TO_BRONZE_Inner')]",
 			"type": "Microsoft.DataFactory/factories/pipelines",
 			"apiVersion": "2018-06-01",
 			"properties": {
 				"activities": [
 					{
-						"name": "Copy data1",
-						"type": "Copy",
+						"name": "Read Source MTDT Table details",
+						"type": "Lookup",
 						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 2,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": {
+									"value": "SELECT * FROM adg.etl_source_metadata WHERE table_id = @{pipeline().parameters.table_id}",
+									"type": "Expression"
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "DS_AzureSql",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": true
+						}
+					},
+					{
+						"name": "Set Current Timestamp",
+						"type": "SetVariable",
+						"dependsOn": [],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "current_start_time",
+							"value": {
+								"value": "@formatDateTime(utcNow(), 'yyyy-MM-dd_hh:mm:ss')",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "Source_to_Landing Ingestion",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "Read Source MTDT Table details",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "Set Current Timestamp",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
 						"policy": {
 							"timeout": "0.12:00:00",
 							"retry": 0,
@@ -222,7 +282,10 @@
 						"typeProperties": {
 							"source": {
 								"type": "PostgreSqlV2Source",
-								"query": "SELECT * FROM public.manufacturing_units",
+								"query": {
+									"value": "SELECT * FROM public.@{activity('Read Source MTDT Table details').output.firstRow.source_path_or_table}",
+									"type": "Expression"
+								},
 								"queryTimeout": "02:00:00"
 							},
 							"sink": {
@@ -257,7 +320,10 @@
 								"type": "DatasetReference",
 								"parameters": {
 									"container": "landingadg",
-									"folder": "test121126"
+									"folder": {
+										"value": "@concat(\n    activity('Read Source MTDT Table details').output.firstRow.source_system,\n    '/',\n    activity('Read Source MTDT Table details').output.firstRow.source_path_or_table,\n    '/',\n    variables('current_start_time')\n)",
+										"type": "Expression"
+									}
 								}
 							}
 						]
@@ -266,9 +332,21 @@
 				"policy": {
 					"elapsedTimeMetric": {}
 				},
+				"parameters": {
+					"table_id": {
+						"type": "string",
+						"defaultValue": "1"
+					}
+				},
+				"variables": {
+					"current_start_time": {
+						"type": "String"
+					}
+				},
 				"annotations": []
 			},
 			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/DS_AzureSql')]",
 				"[concat(variables('factoryId'), '/datasets/DS_PostgreSql')]",
 				"[concat(variables('factoryId'), '/datasets/DS_Postgre_to_ADLS_Sink_Parquet')]"
 			]
@@ -366,6 +444,78 @@
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/datasets/DS_AzureSql')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/test_pipeline')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Copy data1",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "PostgreSqlV2Source",
+								"query": "SELECT * FROM public.manufacturing_units",
+								"queryTimeout": "02:00:00"
+							},
+							"sink": {
+								"type": "ParquetSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "ParquetWriteSettings"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "DS_PostgreSql",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "DS_Postgre_to_ADLS_Sink_Parquet",
+								"type": "DatasetReference",
+								"parameters": {
+									"container": "landingadg",
+									"folder": "test121126"
+								}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/DS_PostgreSql')]",
+				"[concat(variables('factoryId'), '/datasets/DS_Postgre_to_ADLS_Sink_Parquet')]"
 			]
 		}
 	]
