@@ -1,5 +1,5 @@
 {
-	"name": "PL_SOURCE_TO_BRONZE_Inner",
+	"name": "PL_SOURCE_TO_SILVER_Inner",
 	"properties": {
 		"activities": [
 			{
@@ -120,12 +120,134 @@
 						}
 					}
 				]
+			},
+			{
+				"name": "Landing_to_Bronze",
+				"type": "DatabricksNotebook",
+				"dependsOn": [
+					{
+						"activity": "Source_to_Landing Ingestion",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/amperedrive-gigafactory/amperedrive-gigafactory/databricks/Landing_to_Bronze",
+					"baseParameters": {
+						"source_system": {
+							"value": "@activity('Read Source MTDT Table details').output.firstRow.source_system",
+							"type": "Expression"
+						},
+						"source_path_or_table": {
+							"value": "@activity('Read Source MTDT Table details').output.firstRow.source_path_or_table",
+							"type": "Expression"
+						},
+						"landing_timestamp": {
+							"value": "@variables('current_start_time')",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "LS_ADF_to_AzureDatabricks",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "Bronze_to_Silver",
+				"type": "DatabricksNotebook",
+				"dependsOn": [
+					{
+						"activity": "Landing_to_Bronze",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/amperedrive-gigafactory/amperedrive-gigafactory/databricks/Bronze_to_Silver",
+					"baseParameters": {
+						"bronze_table_name": {
+							"value": "@activity('Read Source MTDT Table details').output.firstRow.source_path_or_table",
+							"type": "Expression"
+						},
+						"target_table_name": {
+							"value": "@activity('Read Source MTDT Table details').output.firstRow.target_table_name",
+							"type": "Expression"
+						},
+						"landing_timestamp": {
+							"value": "@variables('current_start_time')",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "LS_ADF_to_AzureDatabricks",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "Update Success status",
+				"type": "Script",
+				"dependsOn": [
+					{
+						"activity": "Bronze_to_Silver",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 2,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"linkedServiceName": {
+					"referenceName": "LS_ADF_to_AzureSqlDB",
+					"type": "LinkedServiceReference"
+				},
+				"typeProperties": {
+					"scripts": [
+						{
+							"type": "Query",
+							"text": {
+								"value": "UPDATE adg.etl_pipeline_execution_log\nSET status = 'SUCCESS', watermark_end = SYSUTCDATETIME(), rows_extracted = @{activity('Bronze_to_Silver').output.runOutput.rows_extracted}, rows_loaded = @{activity('Bronze_to_Silver').output.runOutput.rows_loaded}, rows_inserted = @{activity('Bronze_to_Silver').output.runOutput.rows_inserted}, rows_updated = @{activity('Bronze_to_Silver').output.runOutput.rows_updated}, completed_at = SYSUTCDATETIME()\nWHERE pipeline_name = '@{pipeline().parameters.pipeline_name}' AND table_id = @{pipeline().parameters.table_id}",
+								"type": "Expression"
+							}
+						}
+					],
+					"scriptBlockExecutionTimeout": "02:00:00"
+				}
 			}
 		],
 		"parameters": {
 			"table_id": {
 				"type": "string",
 				"defaultValue": "1"
+			},
+			"pipeline_name": {
+				"type": "string",
+				"defaultValue": "a1"
 			}
 		},
 		"variables": {
