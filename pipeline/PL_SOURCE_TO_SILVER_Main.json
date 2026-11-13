@@ -159,7 +159,7 @@
 			},
 			"pipeline_name": {
 				"type": "string",
-				"defaultValue": "a8_ADLS_CSV_Equi"
+				"defaultValue": "a9_ADLS_CSV_Vehi"
 			}
 		},
 		"variables": {
