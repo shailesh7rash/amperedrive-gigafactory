@@ -102,79 +102,11 @@
 						}
 					},
 					{
-						"name": "Source_to_Landing Ingestion",
-						"type": "Copy",
-						"dependsOn": [
-							{
-								"activity": "Check Load Type",
-								"dependencyConditions": [
-									"Succeeded"
-								]
-							}
-						],
-						"policy": {
-							"timeout": "0.12:00:00",
-							"retry": 0,
-							"retryIntervalInSeconds": 30,
-							"secureOutput": false,
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"source": {
-								"type": "PostgreSqlV2Source",
-								"query": {
-									"value": "SELECT * FROM public.@{activity('Read Source MTDT Table details').output.firstRow.source_path_or_table}\n@{\n    if(equals(activity('Read Source MTDT Table details').output.firstRow.load_type, 'FULL_OVERWRITE'),\n    '',\n    concat(' WHERE ', activity('Read Source MTDT Table details').output.firstRow.watermark_column, ' > ', '''', variables('last_watermark_value'), '''')\n    )\n}",
-									"type": "Expression"
-								},
-								"queryTimeout": "02:00:00"
-							},
-							"sink": {
-								"type": "ParquetSink",
-								"storeSettings": {
-									"type": "AzureBlobFSWriteSettings"
-								},
-								"formatSettings": {
-									"type": "ParquetWriteSettings"
-								}
-							},
-							"enableStaging": false,
-							"translator": {
-								"type": "TabularTranslator",
-								"typeConversion": true,
-								"typeConversionSettings": {
-									"allowDataTruncation": true,
-									"treatBooleanAsNumber": false
-								}
-							}
-						},
-						"inputs": [
-							{
-								"referenceName": "DS_PostgreSql",
-								"type": "DatasetReference",
-								"parameters": {}
-							}
-						],
-						"outputs": [
-							{
-								"referenceName": "DS_Postgre_to_ADLS_Sink_Parquet",
-								"type": "DatasetReference",
-								"parameters": {
-									"container": "landingadg",
-									"folder": {
-										"value": "@concat(\n    activity('Read Source MTDT Table details').output.firstRow.source_system,\n    '/',\n    activity('Read Source MTDT Table details').output.firstRow.source_path_or_table,\n    '/',\n    variables('current_start_time')\n)",
-										"type": "Expression"
-									}
-								}
-							}
-						]
-					},
-					{
 						"name": "Landing_to_Bronze",
 						"type": "DatabricksNotebook",
 						"dependsOn": [
 							{
-								"activity": "Source_to_Landing Ingestion",
+								"activity": "Switch for Postgres or CSV",
 								"dependencyConditions": [
 									"Succeeded"
 								]
@@ -428,6 +360,161 @@
 								}
 							]
 						}
+					},
+					{
+						"name": "Switch for Postgres or CSV",
+						"type": "Switch",
+						"dependsOn": [
+							{
+								"activity": "Check Load Type",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"on": {
+								"value": "@activity('Read Source MTDT Table details').output.firstRow.source_system",
+								"type": "Expression"
+							},
+							"cases": [
+								{
+									"value": "POSTGRES_NEON",
+									"activities": [
+										{
+											"name": "Source_to_Landing Ingestion",
+											"type": "Copy",
+											"dependsOn": [],
+											"policy": {
+												"timeout": "0.12:00:00",
+												"retry": 0,
+												"retryIntervalInSeconds": 30,
+												"secureOutput": false,
+												"secureInput": false
+											},
+											"userProperties": [],
+											"typeProperties": {
+												"source": {
+													"type": "PostgreSqlV2Source",
+													"query": {
+														"value": "SELECT * FROM public.@{activity('Read Source MTDT Table details').output.firstRow.source_path_or_table}\n@{\n    if(equals(activity('Read Source MTDT Table details').output.firstRow.load_type, 'FULL_OVERWRITE'),\n    '',\n    concat(' WHERE ', activity('Read Source MTDT Table details').output.firstRow.watermark_column, ' > ', '''', variables('last_watermark_value'), '''')\n    )\n}",
+														"type": "Expression"
+													},
+													"queryTimeout": "02:00:00"
+												},
+												"sink": {
+													"type": "ParquetSink",
+													"storeSettings": {
+														"type": "AzureBlobFSWriteSettings"
+													},
+													"formatSettings": {
+														"type": "ParquetWriteSettings"
+													}
+												},
+												"enableStaging": false,
+												"translator": {
+													"type": "TabularTranslator",
+													"typeConversion": true,
+													"typeConversionSettings": {
+														"allowDataTruncation": true,
+														"treatBooleanAsNumber": false
+													}
+												}
+											},
+											"inputs": [
+												{
+													"referenceName": "DS_PostgreSql",
+													"type": "DatasetReference",
+													"parameters": {}
+												}
+											],
+											"outputs": [
+												{
+													"referenceName": "DS_Postgre_to_ADLS_Sink_Parquet",
+													"type": "DatasetReference",
+													"parameters": {
+														"container": "landingadg",
+														"folder": {
+															"value": "@concat(\n    activity('Read Source MTDT Table details').output.firstRow.source_system,\n    '/',\n    activity('Read Source MTDT Table details').output.firstRow.source_path_or_table,\n    '/',\n    variables('current_start_time')\n)",
+															"type": "Expression"
+														}
+													}
+												}
+											]
+										}
+									]
+								},
+								{
+									"value": "ADLS_CSV",
+									"activities": [
+										{
+											"name": "Source to Landing CSV",
+											"type": "Copy",
+											"dependsOn": [],
+											"policy": {
+												"timeout": "0.12:00:00",
+												"retry": 0,
+												"retryIntervalInSeconds": 30,
+												"secureOutput": false,
+												"secureInput": false
+											},
+											"userProperties": [],
+											"typeProperties": {
+												"source": {
+													"type": "BinarySource",
+													"storeSettings": {
+														"type": "AzureBlobFSReadSettings",
+														"recursive": false,
+														"modifiedDatetimeStart": {
+															"value": "@variables('last_watermark_value')",
+															"type": "Expression"
+														},
+														"deleteFilesAfterCompletion": false
+													},
+													"formatSettings": {
+														"type": "BinaryReadSettings"
+													}
+												},
+												"sink": {
+													"type": "BinarySink",
+													"storeSettings": {
+														"type": "AzureBlobFSWriteSettings"
+													}
+												},
+												"enableStaging": false
+											},
+											"inputs": [
+												{
+													"referenceName": "DS_ADF_to_ADLS_CSV_Binary",
+													"type": "DatasetReference",
+													"parameters": {
+														"folder": {
+															"value": "@activity('Read Source MTDT Table details').output.firstRow.source_path_or_table",
+															"type": "Expression"
+														},
+														"container": "sourceadg"
+													}
+												}
+											],
+											"outputs": [
+												{
+													"referenceName": "DS_ADF_to_ADLS_CSV_Binary",
+													"type": "DatasetReference",
+													"parameters": {
+														"folder": {
+															"value": "@concat(\n    activity('Read Source MTDT Table details').output.firstRow.source_system,\n    '/',\n    activity('Read Source MTDT Table details').output.firstRow.source_path_or_table,\n    '/',\n    variables('current_start_time')\n)",
+															"type": "Expression"
+														},
+														"container": "landingadg"
+													}
+												}
+											]
+										}
+									]
+								}
+							]
+						}
 					}
 				],
 				"policy": {
@@ -455,10 +542,11 @@
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/datasets/DS_AzureSql')]",
+				"[concat(variables('factoryId'), '/linkedServices/LS_ADF_to_AzureDatabricks')]",
+				"[concat(variables('factoryId'), '/linkedServices/LS_ADF_to_AzureSqlDB')]",
 				"[concat(variables('factoryId'), '/datasets/DS_PostgreSql')]",
 				"[concat(variables('factoryId'), '/datasets/DS_Postgre_to_ADLS_Sink_Parquet')]",
-				"[concat(variables('factoryId'), '/linkedServices/LS_ADF_to_AzureDatabricks')]",
-				"[concat(variables('factoryId'), '/linkedServices/LS_ADF_to_AzureSqlDB')]"
+				"[concat(variables('factoryId'), '/datasets/DS_ADF_to_ADLS_CSV_Binary')]"
 			]
 		},
 		{
@@ -624,11 +712,11 @@
 				"parameters": {
 					"source_system": {
 						"type": "string",
-						"defaultValue": "POSTGRES_NEON"
+						"defaultValue": "ADLS_CSV"
 					},
 					"pipeline_name": {
 						"type": "string",
-						"defaultValue": "a7_all_postgres"
+						"defaultValue": "a8_ADLS_CSV_Equi"
 					}
 				},
 				"variables": {
@@ -714,6 +802,43 @@
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/datasets/DS_PostgreSql')]",
 				"[concat(variables('factoryId'), '/datasets/DS_Postgre_to_ADLS_Sink_Parquet')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_ADF_to_ADLS_CSV_Binary')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_ADF_to_ADLS",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"folder": {
+						"type": "string"
+					},
+					"container": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "Binary",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": {
+							"value": "@dataset().folder",
+							"type": "Expression"
+						},
+						"fileSystem": {
+							"value": "@dataset().container",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_ADF_to_ADLS')]"
 			]
 		},
 		{
