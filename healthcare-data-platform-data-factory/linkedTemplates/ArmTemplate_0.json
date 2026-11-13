@@ -881,7 +881,7 @@
 					},
 					"pipeline_name": {
 						"type": "string",
-						"defaultValue": "a6_all_postgres"
+						"defaultValue": "a7_all_postgres"
 					}
 				},
 				"variables": {
