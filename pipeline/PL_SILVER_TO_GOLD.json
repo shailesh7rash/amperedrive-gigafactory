@@ -1,0 +1,128 @@
+{
+	"name": "PL_SILVER_TO_GOLD",
+	"properties": {
+		"activities": [
+			{
+				"name": "Read Source Metadata",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 2,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": {
+							"value": "SELECT table_id, target_table_name FROM adg.etl_source_metadata WHERE is_active = 1 AND source_system = 'SILVER_LAYER'",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "DS_AzureSql",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "Ingest All Tables",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Read Source Metadata",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Read Source Metadata').output.value",
+						"type": "Expression"
+					},
+					"isSequential": false,
+					"activities": [
+						{
+							"name": "Insert Running status",
+							"type": "Script",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 2,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"linkedServiceName": {
+								"referenceName": "LS_ADF_to_AzureSqlDB",
+								"type": "LinkedServiceReference"
+							},
+							"typeProperties": {
+								"scripts": [
+									{
+										"type": "Query",
+										"text": {
+											"value": "INSERT INTO adg.etl_pipeline_execution_log (table_id, pipeline_name, stage, status, started_at, watermark_start)\nVALUES\n(@{item().table_id}, '@{pipeline().parameters.pipeline_name}', 'SILVER_TO_GOLD', 'RUNNING', SYSUTCDATETIME(), SYSUTCDATETIME())",
+											"type": "Expression"
+										}
+									}
+								],
+								"scriptBlockExecutionTimeout": "02:00:00"
+							}
+						},
+						{
+							"name": "Update Failed status",
+							"type": "Script",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 2,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"linkedServiceName": {
+								"referenceName": "LS_ADF_to_AzureSqlDB",
+								"type": "LinkedServiceReference"
+							},
+							"typeProperties": {
+								"scripts": [
+									{
+										"type": "Query",
+										"text": {
+											"value": "UPDATE adg.etl_pipeline_execution_log\nSET status = 'FAILED', watermark_end = SYSUTCDATETIME()\nWHERE pipeline_name = '@{pipeline().parameters.pipeline_name}' AND table_id = @{item().table_id}",
+											"type": "Expression"
+										}
+									}
+								],
+								"scriptBlockExecutionTimeout": "02:00:00"
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"pipeline_name": {
+				"type": "string",
+				"defaultValue": "a10_Gold"
+			}
+		},
+		"variables": {
+			"test": {
+				"type": "String"
+			}
+		},
+		"annotations": []
+	}
+}
