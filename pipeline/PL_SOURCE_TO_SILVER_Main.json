@@ -155,11 +155,11 @@
 		"parameters": {
 			"source_system": {
 				"type": "string",
-				"defaultValue": "POSTGRES_NEON"
+				"defaultValue": "ADLS_CSV"
 			},
 			"pipeline_name": {
 				"type": "string",
-				"defaultValue": "a7_all_postgres"
+				"defaultValue": "a8_ADLS_CSV_Equi"
 			}
 		},
 		"variables": {
