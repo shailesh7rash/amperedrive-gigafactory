@@ -53,13 +53,7 @@
 				"type": "Copy",
 				"dependsOn": [
 					{
-						"activity": "Read Source MTDT Table details",
-						"dependencyConditions": [
-							"Succeeded"
-						]
-					},
-					{
-						"activity": "Set Current Timestamp",
+						"activity": "Check Load Type",
 						"dependencyConditions": [
 							"Succeeded"
 						]
@@ -77,7 +71,7 @@
 					"source": {
 						"type": "PostgreSqlV2Source",
 						"query": {
-							"value": "SELECT * FROM public.@{activity('Read Source MTDT Table details').output.firstRow.source_path_or_table}",
+							"value": "SELECT * FROM public.@{activity('Read Source MTDT Table details').output.firstRow.source_path_or_table}\n@{\n    if(equals(activity('Read Source MTDT Table details').output.firstRow.load_type, 'FULL_OVERWRITE'),\n    '',\n    concat(' WHERE ', activity('Read Source MTDT Table details').output.firstRow.watermark_column, ' > ', '''', variables('last_watermark_value'), '''')\n    )\n}",
 							"type": "Expression"
 						},
 						"queryTimeout": "02:00:00"
@@ -195,6 +189,18 @@
 						"landing_timestamp": {
 							"value": "@variables('current_start_time')",
 							"type": "Expression"
+						},
+						"load_type": {
+							"value": "@activity('Read Source MTDT Table details').output.firstRow.load_type",
+							"type": "Expression"
+						},
+						"merge_key": {
+							"value": "@coalesce(activity('Read Source MTDT Table details').output.firstRow.merge_key, '')",
+							"type": "Expression"
+						},
+						"scd_type": {
+							"value": "@coalesce(activity('Read Source MTDT Table details').output.firstRow.scd_type, '')",
+							"type": "Expression"
 						}
 					}
 				},
@@ -238,6 +244,135 @@
 					],
 					"scriptBlockExecutionTimeout": "02:00:00"
 				}
+			},
+			{
+				"name": "Check Load Type",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "Read Source MTDT Table details",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "Set Current Timestamp",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@not(equals(activity('Read Source MTDT Table details').output.firstRow.load_type, 'FULL_OVERWRITE'))",
+						"type": "Expression"
+					},
+					"ifTrueActivities": [
+						{
+							"name": "Read watermark for merge and append load",
+							"type": "Lookup",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "AzureSqlSource",
+									"sqlReaderQuery": {
+										"value": "SELECT last_watermark_value FROM adg.etl_pipeline_watermarks WHERE table_id = @{pipeline().parameters.table_id}",
+										"type": "Expression"
+									},
+									"queryTimeout": "02:00:00",
+									"partitionOption": "None"
+								},
+								"dataset": {
+									"referenceName": "DS_AzureSql",
+									"type": "DatasetReference"
+								}
+							}
+						},
+						{
+							"name": "Watermark value for Merge Append",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "Read watermark for merge and append load",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "last_watermark_value",
+								"value": {
+									"value": "@activity('Read watermark for merge and append load').output.firstRow.last_watermark_value",
+									"type": "Expression"
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "Check Load Type for Watermark update",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "Bronze_to_Silver",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@not(equals(activity('Read Source MTDT Table details').output.firstRow.load_type, 'FULL_OVERWRITE'))",
+						"type": "Expression"
+					},
+					"ifTrueActivities": [
+						{
+							"name": "Update Watermark on Success",
+							"type": "Script",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"linkedServiceName": {
+								"referenceName": "LS_ADF_to_AzureSqlDB",
+								"type": "LinkedServiceReference"
+							},
+							"typeProperties": {
+								"scripts": [
+									{
+										"type": "Query",
+										"text": {
+											"value": "UPDATE adg.etl_pipeline_watermarks\nSET last_watermark_value = SYSUTCDATETIME()\nWHERE table_id = @{pipeline().parameters.table_id}",
+											"type": "Expression"
+										}
+									}
+								],
+								"scriptBlockExecutionTimeout": "02:00:00"
+							}
+						}
+					]
+				}
 			}
 		],
 		"parameters": {
@@ -252,6 +387,9 @@
 		},
 		"variables": {
 			"current_start_time": {
+				"type": "String"
+			},
+			"last_watermark_value": {
 				"type": "String"
 			}
 		},
