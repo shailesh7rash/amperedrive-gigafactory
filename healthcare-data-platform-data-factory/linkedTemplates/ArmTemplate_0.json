@@ -1203,6 +1203,23 @@
 										],
 										"scriptBlockExecutionTimeout": "02:00:00"
 									}
+								},
+								{
+									"name": "Show pipeline as failed",
+									"type": "Fail",
+									"dependsOn": [
+										{
+											"activity": "Execute PL_Source_to_Bronze_Inner",
+											"dependencyConditions": [
+												"Failed"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"message": "Inner pipeline failed",
+										"errorCode": "500"
+									}
 								}
 							]
 						}
