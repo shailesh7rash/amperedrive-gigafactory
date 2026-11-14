@@ -82,7 +82,14 @@
 						{
 							"name": "Update Failed status",
 							"type": "Script",
-							"dependsOn": [],
+							"dependsOn": [
+								{
+									"activity": "Silver_To_Gold",
+									"dependencyConditions": [
+										"Failed"
+									]
+								}
+							],
 							"policy": {
 								"timeout": "0.12:00:00",
 								"retry": 2,
@@ -101,6 +108,72 @@
 										"type": "Query",
 										"text": {
 											"value": "UPDATE adg.etl_pipeline_execution_log\nSET status = 'FAILED', watermark_end = SYSUTCDATETIME()\nWHERE pipeline_name = '@{pipeline().parameters.pipeline_name}' AND table_id = @{item().table_id}",
+											"type": "Expression"
+										}
+									}
+								],
+								"scriptBlockExecutionTimeout": "02:00:00"
+							}
+						},
+						{
+							"name": "Silver_To_Gold",
+							"type": "DatabricksNotebook",
+							"dependsOn": [
+								{
+									"activity": "Insert Running status",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"notebookPath": {
+									"value": "/amperedrive-gigafactory/amperedrive-gigafactory/databricks/Gold/@{item().target_table_name}",
+									"type": "Expression"
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "LS_ADF_to_AzureDatabricks",
+								"type": "LinkedServiceReference"
+							}
+						},
+						{
+							"name": "Update Success status",
+							"type": "Script",
+							"dependsOn": [
+								{
+									"activity": "Silver_To_Gold",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 2,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"linkedServiceName": {
+								"referenceName": "LS_ADF_to_AzureSqlDB",
+								"type": "LinkedServiceReference"
+							},
+							"typeProperties": {
+								"scripts": [
+									{
+										"type": "Query",
+										"text": {
+											"value": "UPDATE adg.etl_pipeline_execution_log\nSET status = 'SUCCESS', watermark_end = SYSUTCDATETIME(), rows_extracted = @{activity('Silver_To_Gold').output.runOutput.rows_extracted}, rows_loaded = @{activity('Silver_To_Gold').output.runOutput.rows_loaded}, rows_inserted = @{activity('Silver_To_Gold').output.runOutput.rows_inserted}, rows_updated = @{activity('Silver_To_Gold').output.runOutput.rows_updated}, completed_at = SYSUTCDATETIME()\nWHERE pipeline_name = '@{pipeline().parameters.pipeline_name}' AND table_id = @{item().table_id}",
 											"type": "Expression"
 										}
 									}
