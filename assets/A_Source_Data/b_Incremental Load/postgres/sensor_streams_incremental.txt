@@ -1,0 +1,28 @@
+-- 1. Ensure the target partitioned infrastructure is active
+-- (The main table and partition were created in the initial load phase)
+
+-- 2. Dynamically append exactly 500 new real-time streaming records for Day 2
+INSERT INTO sensor_streams (timestamp, equipment_id, sensor_type, sensor_value)
+SELECT 
+    '2026-11-08 06:00:00'::TIMESTAMP + (s.idx * INTERVAL '15 seconds') AS timestamp,
+    (s.idx % 30) + 1 AS equipment_id,
+    CASE 
+        WHEN ((s.idx % 30) + 1) IN (1,2,3,4,5,6) THEN 'Hydraulic_Pressure_PSI'
+        WHEN ((s.idx % 30) + 1) IN (7,8,23,24) THEN 'Vacuum_Pressure_Bar'
+        WHEN ((s.idx % 30) + 1) IN (11,13,15) THEN 'Tonnage_Force'
+        WHEN ((s.idx % 30) + 1) IN (17,19,21) THEN 'Spindle_Speed_RPM'
+        ELSE 'Temperature_C'
+    END AS sensor_type,
+    CASE 
+        WHEN ((s.idx % 30) + 1) IN (1,2,3,4,5,6) THEN ROUND((2000 + ((s.idx + 50) % 400))::NUMERIC, 3)     -- Pressure variations
+        WHEN ((s.idx % 30) + 1) IN (7,8,23,24) THEN ROUND((-0.75 + (((s.idx + 5) % 30) * 0.01))::NUMERIC, 3) -- Vacuum variations
+        WHEN ((s.idx % 30) + 1) IN (11,13,15) THEN ROUND((450 + ((s.idx + 120) % 650))::NUMERIC, 3)         -- Tonnage variations
+        WHEN ((s.idx % 30) + 1) IN (17,19,21) THEN ROUND((2200 + ((s.idx + 500) % 4300))::NUMERIC, 3)       -- RPM variations
+        ELSE ROUND((42 + ((s.idx + 3) % 45))::NUMERIC, 3)                                                 -- Temp variations
+    END AS sensor_value
+FROM generate_series(0, 499) AS s(idx);
+
+-- 3. Verify append success and partition routing inside Neon
+SELECT COUNT(*), MIN(timestamp), MAX(timestamp) 
+FROM sensor_streams 
+WHERE timestamp >= '2026-11-08 00:00:00';

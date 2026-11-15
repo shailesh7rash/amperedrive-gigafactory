@@ -1,0 +1,37 @@
+-- 1. Create the modernized partitioned sensor streams table
+CREATE TABLE sensor_streams (
+    telemetry_id BIGINT GENERATED ALWAYS AS IDENTITY,
+    timestamp TIMESTAMP NOT NULL,
+    equipment_id INT NOT NULL,          -- Logically references Azure Storage Equipment CSV ID
+    sensor_type VARCHAR(50) NOT NULL,   -- e.g., 'Temperature_C', 'Vibration_Hz', 'Tonnage_Force'
+    sensor_value DECIMAL(10,3) NOT NULL,
+    PRIMARY KEY (telemetry_id, timestamp)
+) PARTITION BY RANGE (timestamp);
+
+-- Create November 2026 Partition
+CREATE TABLE sensor_streams_y2026m11 PARTITION OF sensor_streams
+    FOR VALUES FROM ('2026-11-01 00:00:00') TO ('2026-12-01 00:00:00');
+
+-- 2. Dynamically inject exactly 1,000 production rows via an optimized simulation loop
+INSERT INTO sensor_streams (timestamp, equipment_id, sensor_type, sensor_value)
+SELECT 
+    '2026-11-01 06:00:00'::TIMESTAMP + (s.idx * INTERVAL '15 seconds') AS timestamp,
+    (s.idx % 30) + 1 AS equipment_id,
+    CASE 
+        WHEN ((s.idx % 30) + 1) IN (1,2,3,4,5,6) THEN 'Hydraulic_Pressure_PSI'
+        WHEN ((s.idx % 30) + 1) IN (7,8,23,24) THEN 'Vacuum_Pressure_Bar'
+        WHEN ((s.idx % 30) + 1) IN (11,13,15) THEN 'Tonnage_Force'
+        WHEN ((s.idx % 30) + 1) IN (17,19,21) THEN 'Spindle_Speed_RPM'
+        ELSE 'Temperature_C'
+    END AS sensor_type,
+    CASE 
+        WHEN ((s.idx % 30) + 1) IN (1,2,3,4,5,6) THEN ROUND((2000 + (s.idx % 400))::NUMERIC, 3)          -- Pressure: 2000 - 2400
+        WHEN ((s.idx % 30) + 1) IN (7,8,23,24) THEN ROUND((-0.75 + ((s.idx % 30) * 0.01))::NUMERIC, 3)    -- Vacuum: -0.75 to -0.45
+        WHEN ((s.idx % 30) + 1) IN (11,13,15) THEN ROUND((450 + (s.idx % 650))::NUMERIC, 3)             -- Tonnage: 450 - 1100
+        WHEN ((s.idx % 30) + 1) IN (17,19,21) THEN ROUND((2200 + (s.idx % 4300))::NUMERIC, 3)           -- RPM: 2200 - 6500
+        ELSE ROUND((40 + (s.idx % 45))::NUMERIC, 3)                                                    -- Temp: 40 - 85
+    END AS sensor_value
+FROM generate_series(0, 999) AS s(idx);
+
+-- 3. Verify exactly 1,000 relational records are loaded
+SELECT COUNT(*), MIN(timestamp), MAX(timestamp) FROM sensor_streams;

@@ -1,0 +1,62 @@
+-- 1. Ensure no leftover staging table exists, then create a clean one
+DROP TABLE IF EXISTS staging_products_delta;
+
+CREATE TEMP TABLE staging_products_delta (
+    product_id INT,
+    plant_id INT,
+    product_name VARCHAR(100),
+    product_category VARCHAR(50),
+    material_cost_usd DECIMAL(10,2),
+    factory_output_cost_usd DECIMAL(10,2),
+    standard_cycle_time_secs INT,
+    last_modified_at TIMESTAMP
+);
+
+-- 2. Populate the 20 incremental entries (10 Updates / 10 New)
+INSERT INTO staging_products_delta (product_id, plant_id, product_name, product_category, material_cost_usd, factory_output_cost_usd, standard_cycle_time_secs, last_modified_at)
+VALUES
+(1, 1, 'Model A Hatchback Standard', 'Finished Vehicle', 11800.00, 16100.00, 3500, '2026-11-08 06:00:00'),
+(5, 2, 'Model B Sedan Long-Range', 'Finished Vehicle', 15500.00, 20900.00, 4100, '2026-11-08 06:00:00'),
+(9, 3, 'BMS Central Control Board v4', 'Electronics', 165.00, 220.00, 40, '2026-11-08 06:05:00'),
+(12, 4, 'Traction Inverter Core', 'Electronics', 430.00, 570.00, 80, '2026-11-08 06:10:00'),
+(15, 5, 'Model A/B Modular Subframe', 'Structural', 395.00, 550.00, 195, '2026-11-08 06:15:00'),
+(18, 6, 'Hatchback Door Shell Left', 'Structural', 105.00, 165.00, 55, '2026-11-08 06:20:00'),
+(21, 7, 'Electric Motor Rotor Core', 'Powertrain', 365.00, 495.00, 100, '2026-11-08 06:25:00'),
+(24, 8, 'Lithium Ion Pack v4 High-Cap', 'Battery Cell', 2950.00, 3800.00, 280, '2026-11-08 06:30:00'),
+(27, 9, 'Stator Assembly Copper Wound', 'Powertrain', 470.00, 650.00, 130, '2026-11-08 06:35:00'),
+(30, 10,'Ceramic Wheel Bearing Kit', 'Powertrain', 40.00, 62.00, 22, '2026-11-08 06:40:00'),
+(51, 1, 'Model A Hatchback Lite', 'Finished Vehicle', 10500.00, 14200.00, 3300, '2026-11-08 08:00:00'),
+(52, 2, 'Model B Sedan Plaid Edition', 'Finished Vehicle', 21000.00, 28500.00, 4600, '2026-11-08 08:00:00'),
+(53, 3, 'ADAS Telemetry Module v1', 'Electronics', 120.00, 175.00, 50, '2026-11-08 08:05:00'),
+(54, 4, 'High-Voltage Junction Box', 'Electronics', 85.00, 125.00, 40, '2026-11-08 08:10:00'),
+(55, 5, 'Model C/D Underbody Frame', 'Structural', 580.00, 810.00, 260, '2026-11-08 08:15:00'),
+(56, 6, 'SUV Tailgate Door Shell Assembly','Structural', 140.00, 210.00, 70, '2026-11-08 08:20:00'),
+(57, 7, 'Front Dual-Drive Gearbox Core','Powertrain', 680.00, 920.00, 165, '2026-11-08 08:25:00'),
+(58, 8, 'Battery Pack Module Spacers', 'Battery Cell', 12.00, 19.50, 10, '2026-11-08 08:30:00'),
+(59, 12,'Next-Gen 4D Imaging Radar', 'Sensors', 310.00, 430.00, 60, '2026-11-08 08:35:00'),
+(60, 15,'Liquid Cabin Coolant Valve', 'Cooling', 18.50, 29.00, 15, '2026-11-08 08:40:00');
+
+-- 3. Execute the standard idempotent Upsert logic into the target warehouse table
+INSERT INTO products (
+    product_id, plant_id, product_name, product_category, 
+    material_cost_usd, factory_output_cost_usd, standard_cycle_time_secs, updated_at
+)
+OVERRIDING SYSTEM VALUE
+SELECT 
+    product_id, plant_id, product_name, product_category, 
+    material_cost_usd, factory_output_cost_usd, standard_cycle_time_secs, last_modified_at
+FROM staging_products_delta
+ON CONFLICT (product_id) DO UPDATE SET
+    material_cost_usd = EXCLUDED.material_cost_usd,
+    factory_output_cost_usd = EXCLUDED.factory_output_cost_usd,
+    standard_cycle_time_secs = EXCLUDED.standard_cycle_time_secs,
+    updated_at = EXCLUDED.updated_at;
+
+-- 4. Sync the identity sequence so future auto-inserts don't conflict
+SELECT setval(
+    pg_get_serial_sequence('products', 'product_id'), 
+    COALESCE((SELECT MAX(product_id) FROM products), 1)
+);
+
+-- 5. Clean up temporary memory workspace
+DROP TABLE IF EXISTS staging_products_delta;

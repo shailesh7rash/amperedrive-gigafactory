@@ -1,0 +1,101 @@
+DROP TABLE IF EXISTS products;
+
+-- 1. Create the finalized products dimension table
+CREATE TABLE products (
+    product_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    plant_id INT REFERENCES manufacturing_units(plant_id),
+    product_name VARCHAR(100) NOT NULL,
+    product_category VARCHAR(50) NOT NULL,
+    material_cost_usd DECIMAL(10,2) NOT NULL,
+    factory_output_cost_usd DECIMAL(10,2) NOT NULL,
+    standard_cycle_time_secs INT NOT NULL,
+    inserted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 2. Populate exactly 50 production-grade records
+INSERT INTO products (plant_id, product_name, product_category, material_cost_usd, factory_output_cost_usd, standard_cycle_time_secs) VALUES
+-- ============================================================================
+-- FINISHED VEHICLES (Pune = 1, Chennai = 2) - 8 Rows Total
+-- ============================================================================
+(1, 'Model A Hatchback Standard', 'Finished Vehicle', 12000.00, 16500.00, 3600),
+(1, 'Model A Hatchback Performance', 'Finished Vehicle', 14500.00, 19800.00, 3900),
+(1, 'Model C SUV Dual-Motor Pro', 'Finished Vehicle', 22000.00, 29000.00, 4800),
+(1, 'Model C SUV Ultra Offroad', 'Finished Vehicle', 26000.00, 34500.00, 5200),
+(2, 'Model B Sedan Long-Range', 'Finished Vehicle', 16000.00, 21500.00, 4200),
+(2, 'Model B Sedan Standard Plus', 'Finished Vehicle', 14000.00, 18900.00, 4000),
+(2, 'Model D MPV Family Pack', 'Finished Vehicle', 25000.00, 33000.00, 5400),
+(2, 'Model D MPV Executive Lounge', 'Finished Vehicle', 31000.00, 41500.00, 6000),
+
+-- ============================================================================
+-- GLOBAL EV COMPONENTS & SUB-ASSEMBLIES - 42 Rows Total
+-- ============================================================================
+-- plant_id = 3: Bengaluru Precision Electronics (3 Rows)
+(3, 'BMS Central Control Board v4', 'Electronics', 180.00, 240.00, 45),
+(3, 'Microcontroller Unit V2', 'Electronics', 12.50, 18.00, 15),
+(3, 'Cockpit Infotainment Compute Node', 'Electronics', 350.00, 480.00, 90),
+
+-- plant_id = 4: Gurugram Robotics Assembly (3 Rows)
+(4, 'Traction Inverter Core', 'Electronics', 450.00, 600.00, 85),
+(4, 'High-Voltage Harness Suite', 'Electronics', 95.00, 150.00, 110),
+(4, 'Ultrasonic Sensor Junction Harness', 'Electronics', 22.00, 38.00, 30),
+
+-- plant_id = 5: Sanand Heavy Stamping (3 Rows)
+(5, 'Model A/B Modular Subframe', 'Structural', 410.00, 580.00, 210),
+(5, 'Model C/D Heavy Crash Bar', 'Structural', 85.50, 130.00, 120),
+(5, 'Reinforced EV Battery Enclosure Tray', 'Structural', 620.00, 890.00, 300),
+
+-- plant_id = 6: Chicago Assembly Hub (3 Rows)
+(6, 'Hatchback Door Shell Left', 'Structural', 115.00, 180.00, 60),
+(6, 'SUV Panoramic Roof Frame', 'Structural', 280.00, 420.00, 150),
+(6, 'Aluminum Hood Panel Assembly', 'Structural', 190.00, 290.00, 80),
+
+-- plant_id = 7: Austin Powertrain Foundry (3 Rows)
+(7, 'Electric Motor Rotor Core', 'Powertrain', 380.00, 520.00, 110),
+(7, 'Single-Speed Reduction Gearbox', 'Powertrain', 720.00, 980.00, 180),
+(7, 'Cast Aluminum Drive Unit Housing', 'Powertrain', 140.00, 215.00, 75),
+
+-- plant_id = 8: Silicon Valley Battery Lab (3 Rows)
+(8, 'Lithium Ion Pack v4 High-Cap', 'Battery Cell', 3200.00, 4100.00, 300),
+(8, 'Solid State Relay Block', 'Electronics', 24.00, 35.00, 20),
+(8, 'Thermal Runaway Mitigation Sheet', 'Battery Cell', 45.00, 65.00, 15),
+
+-- plant_id = 9: Munich Powertrain Plant (3 Rows)
+(9, 'Stator Assembly Copper Wound', 'Powertrain', 490.00, 680.00, 140),
+(9, 'Open Differential Assembly', 'Powertrain', 290.00, 400.00, 95),
+(9, 'Rear Axle Drive Shaft Assembly', 'Powertrain', 110.00, 165.00, 50),
+
+-- plant_id = 10: Stuttgart Components Unit (3 Rows)
+(10, 'Ceramic Wheel Bearing Kit', 'Powertrain', 45.00, 70.00, 25),
+(10, 'Hydraulic Brake Caliper', 'Powertrain', 120.00, 175.00, 60),
+(10, 'Regenerative Brake Master Cylinder', 'Powertrain', 210.00, 310.00, 95),
+
+-- plant_id = 11: Wolfsburg Stamping Matrix (3 Rows)
+(11, 'Sedan Underbody Floor Pan', 'Structural', 550.00, 790.00, 240),
+(11, 'MPV Reinforced Pillar Support', 'Structural', 62.00, 95.00, 40),
+(11, 'Side Impact Quarter Panel Right', 'Structural', 135.00, 210.00, 65),
+
+-- plant_id = 12: Tokyo Micro-Battery Lab (4 Rows)
+(12, 'Solid-State LiDAR Array', 'Sensors', 850.00, 1150.00, 120),
+(12, '8MP ADAS Camera Module', 'Sensors', 65.00, 95.00, 30),
+(12, 'Cabin Air Quality Index Sensor', 'Sensors', 14.00, 22.00, 10),
+(12, 'Li-Ion Cell Anode Terminal Post', 'Battery Cell', 3.50, 6.00, 8),
+
+-- plant_id = 13: Toyota City Assembly Engine (4 Rows)
+(13, '77GHz Millimeter Wave Radar', 'Sensors', 140.00, 195.00, 45),
+(13, 'GNSS High-Precision Antenna', 'Sensors', 78.00, 110.00, 35),
+(13, 'Electronic Steering Column Actuator', 'Sensors', 160.00, 240.00, 70),
+(13, 'Brake Pedal Position Transducer', 'Sensors', 18.00, 29.00, 12),
+
+-- plant_id = 14: Sorocaba Powertrain Center (4 Rows)
+(14, 'Dual-Core Liquid Radiator', 'Cooling', 165.00, 230.00, 75),
+(14, 'Motor Mount Vibration Damper', 'Structural', 38.00, 55.00, 35),
+(14, 'Chassis Active Suspension Strut', 'Structural', 240.00, 360.00, 115),
+(14, 'Coolant Expansion Reservoir Tank', 'Cooling', 32.00, 48.00, 25),
+
+-- plant_id = 15: Curitiba Heavy Logistics Node (5 Rows)
+(15, 'High-Pressure Silicone Coolant Hose', 'Cooling', 27.50, 42.00, 20),
+(15, 'Aerodynamic Underbody Deflector', 'Structural', 130.00, 190.00, 80),
+(15, 'Cabin Heat Pump Compressor', 'Cooling', 410.00, 580.00, 130),
+(15, 'Battery Glycol Cooling Plate', 'Cooling', 185.00, 270.00, 90),
+(15, 'HVAC Condenser Fan Block', 'Cooling', 75.00, 115.00, 40);

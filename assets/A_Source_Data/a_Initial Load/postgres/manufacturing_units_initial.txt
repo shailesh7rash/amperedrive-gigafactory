@@ -1,0 +1,38 @@
+DROP TABLE IF EXISTS manufacturing_units;
+
+CREATE TABLE manufacturing_units (
+    plant_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    plant_name VARCHAR(100) NOT NULL,
+    unit_type VARCHAR(30) NOT NULL CHECK (unit_type IN ('COMPONENT_FABRICATION', 'FINAL_ASSEMBLY')), -- NEW LOGIC FLAG
+    region VARCHAR(50),
+    country VARCHAR(50) NOT NULL,
+    scrap_cost_factor DECIMAL(5,2) DEFAULT 1.00,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO manufacturing_units (plant_name, unit_type, region, country, scrap_cost_factor) VALUES
+-- India (Pune and Chennai are designated Final Assembly Lines)
+('Pune EV Gigafactory', 'FINAL_ASSEMBLY', 'Maharashtra', 'India', 0.95),
+('Chennai Auto Castings', 'FINAL_ASSEMBLY', 'Tamil Nadu', 'India', 1.15),
+('Bengaluru Precision Electronics', 'COMPONENT_FABRICATION', 'Karnataka', 'India', 1.05),
+('Gurugram Robotics Assembly', 'COMPONENT_FABRICATION', 'Haryana', 'India', 1.20),
+('Sanand Heavy Stamping', 'COMPONENT_FABRICATION', 'Gujarat', 'India', 1.00),
+
+-- USA (Component Factories)
+('Chicago Assembly Hub', 'COMPONENT_FABRICATION', 'Midwest', 'USA', 1.02),
+('Austin Powertrain Foundry', 'COMPONENT_FABRICATION', 'Texas', 'USA', 0.98),
+('Silicon Valley Battery Lab', 'COMPONENT_FABRICATION', 'California', 'USA', 0.88),
+
+-- Germany (Component Factories)
+('Munich Powertrain Plant', 'COMPONENT_FABRICATION', 'Bavaria', 'Germany', 1.00),
+('Stuttgart Components Unit', 'COMPONENT_FABRICATION', 'Baden-Württemberg', 'Germany', 1.04),
+('Wolfsburg Stamping Matrix', 'COMPONENT_FABRICATION', 'Lower Saxony', 'Germany', 1.10),
+
+-- Japan (Component Factories)
+('Tokyo Micro-Battery Lab', 'COMPONENT_FABRICATION', 'Kanto', 'Japan', 0.85),
+('Toyota City Assembly Engine', 'COMPONENT_FABRICATION', 'Chubu', 'Japan', 0.92),
+
+-- Brazil (Component Factories)
+('Sorocaba Powertrain Center', 'COMPONENT_FABRICATION', 'Sao Paulo', 'Brazil', 1.05),
+('Curitiba Heavy Logistics Node', 'COMPONENT_FABRICATION', 'Parana', 'Brazil', 1.12);

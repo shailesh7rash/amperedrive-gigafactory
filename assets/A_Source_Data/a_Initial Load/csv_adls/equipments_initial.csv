@@ -1,0 +1,31 @@
+﻿equipment_id,plant_id,equipment_name,equipment_type,model_number,created_at,updated_at
+1,1,Chassis Battery Marriage System 1,Marriage Rig,DURR-NEXTROM-E,2026-11-07 18:38:32.880,2026-11-07 18:38:32.880
+2,1,Final Trim Assembly Station Line A,Assembly Line,ABB-FLEX-TRIM,2026-11-07 18:38:32.880,2026-11-07 18:38:32.880
+3,1,Autonomous Vehicle Testing Dyno,Calibration Rig,AVL-DRIVE-EV,2026-11-07 18:38:32.880,2026-11-07 18:38:32.880
+4,2,Chassis Battery Marriage System 2,Marriage Rig,DURR-NEXTROM-E,2026-11-07 18:38:32.880,2026-11-07 18:38:32.880
+5,2,Final Trim Assembly Station Line B,Assembly Line,ABB-FLEX-TRIM,2026-11-07 18:38:32.880,2026-11-07 18:38:32.880
+6,2,ADAS Camera & Radar Alignment Pit,Calibration Rig,CHROMA-CAM7,2026-11-07 18:38:32.880,2026-11-07 18:38:32.880
+7,3,High-Speed SMT Component Placer,SMT Line,FUJI-NXT-III,2026-11-07 18:38:32.880,2026-11-07 18:38:32.880
+8,3,Lead-Free Wave Soldering Oven,Reflow Oven,HELLER-1936,2026-11-07 18:38:32.880,2026-11-07 18:38:32.880
+9,4,Traction Inverter End-of-Line Tester,ATE Tester,CHROMA-3650,2026-11-07 18:38:32.880,2026-11-07 18:38:32.880
+10,4,Automated Wire Harness Braider,Wire Processor,KOMAX-ZETA,2026-11-07 18:38:32.880,2026-11-07 18:38:32.880
+11,5,Progressive Stamping Press 1200T,Stamping Press,SCHULER-DG,2026-11-07 18:38:32.880,2026-11-07 18:38:32.880
+12,5,Battery Enclosure Laser Welder,Robotic Welder,KUKA-KR210,2026-11-07 18:38:32.880,2026-11-07 18:38:32.880
+13,6,Aluminum Body Panel Deep-Draw Press,Stamping Press,AIDA-NC2,2026-11-07 18:38:32.880,2026-11-07 18:38:32.880
+14,6,Left-Side Frame Spot Welding Cell,Robotic Welder,ABB-IRB6700,2026-11-07 18:38:32.880,2026-11-07 18:38:32.880
+15,11,Underbody Floor Pan Press Line,Stamping Press,ISG-ERFURT,2026-11-07 18:38:32.880,2026-11-07 18:38:32.880
+16,11,Reinforced Pillar Structural Welder,Robotic Welder,FANUC-ARC100,2026-11-07 18:38:32.880,2026-11-07 18:38:32.880
+17,7,Rotor Core 5-Axis Milling Node,CNC Machine,DMG-MORI-DMU,2026-11-07 18:38:32.880,2026-11-07 18:38:32.880
+18,7,Drive Unit Housing Foundry Cast,Injection Molder,ENGEL-DUO,2026-11-07 18:38:32.880,2026-11-07 18:38:32.880
+19,9,Stator Hairpin Copper Bender,Hairpin Line,GROB-HAIRPIN,2026-11-07 18:38:32.880,2026-11-07 18:38:32.880
+20,9,Differential Gear Hobbing Machine,CNC Machine,GLEASON-260G,2026-11-07 18:38:32.880,2026-11-07 18:38:32.880
+21,10,Precision Caliper Lathe Center,CNC Machine,MAZAK-QUICK,2026-11-07 18:38:32.880,2026-11-07 18:38:32.880
+22,10,Regen Cylinder Assembly Station,Precision Assembler,FANUC-SR3iA,2026-11-07 18:38:32.880,2026-11-07 18:38:32.880
+23,8,Cylindrical Lithium Cell Stacker,Battery Winder,KATOU-CELL-X,2026-11-07 18:38:32.880,2026-11-07 18:38:32.880
+24,8,Module Ultrasonic Wire Bonder,Ultrasonic Bonder,ORTHODYNE-3600,2026-11-07 18:38:32.880,2026-11-07 18:38:32.880
+25,12,Solid-State LiDAR Optical Tester,Calibration Rig,ZEISS-OPT-X,2026-11-07 18:38:32.880,2026-11-07 18:38:32.880
+26,12,Cleanroom Silicon Wafer Scanner,Optical Inspector,KLA-TENCOR,2026-11-07 18:38:32.880,2026-11-07 18:38:32.880
+27,13,Radar Echo Anechoic Chamber,Anechoic Chamber,BRUEL-KJAER,2026-11-07 18:38:32.880,2026-11-07 18:38:32.880
+28,14,Dual-Core Radiator Leak Tester,Leak Tester,INFICON-LDS,2026-11-07 18:38:32.880,2026-11-07 18:38:32.880
+29,14,Chassis Strut Rubber Injection Molder,Injection Molder,HUSKY-HYLECT,2026-11-07 18:38:32.880,2026-11-07 18:38:32.880
+30,15,Cabin Heat Pump Volumetric Bench,ATE Tester,MTS-SYSTEMS,2026-11-07 18:38:32.880,2026-11-07 18:38:32.880
