@@ -1,0 +1,79 @@
+-- ============================================================================
+-- 0. CREATE DEDICATED METADATA SCHEMA
+-- ============================================================================
+IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = N'adg')
+BEGIN
+    EXEC('CREATE SCHEMA [adg]');
+END
+GO
+
+-- ============================================================================
+-- 1. SOURCE & PIPELINE CONFIGURATION TABLE
+-- ============================================================================
+DROP TABLE IF EXISTS adg.etl_pipeline_execution_log;
+DROP TABLE IF EXISTS adg.etl_pipeline_watermarks;
+DROP TABLE IF EXISTS adg.etl_source_metadata;
+
+CREATE TABLE adg.etl_source_metadata (
+    table_id INT IDENTITY(1,1) PRIMARY KEY,
+    table_name VARCHAR(100) NOT NULL,
+    source_system VARCHAR(50) NOT NULL, -- e.g., 'POSTGRES_NEON', 'ADLS_CSV'
+    source_path_or_table VARCHAR(255) NOT NULL, -- Table name or file identifier (prefixed with 'landing' container at runtime)
+    target_table_name VARCHAR(100) NOT NULL,
+    load_type VARCHAR(30) NOT NULL CHECK (load_type IN ('FULL_OVERWRITE', 'INCREMENTAL_MERGE', 'INCREMENTAL_APPEND')),
+    merge_key VARCHAR(100) NULL, -- Primary key column used for INCREMENTAL_MERGE upserts; NULL for others
+    scd_type INT NULL CHECK (scd_type IN (1, 2)), -- 1 = SCD Type 1 (Overwrite), 2 = SCD Type 2 (Version History)
+    watermark_column VARCHAR(50) NULL, -- Column used for incremental tracking
+    is_active BIT NOT NULL DEFAULT 1,
+    created_at DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+    updated_at DATETIME2 NOT NULL DEFAULT GETUTCDATE()
+);
+
+-- Seed metadata matching your manufacturing portfolio specification
+INSERT INTO adg.etl_source_metadata (table_name, source_system, source_path_or_table, target_table_name, load_type, merge_key, scd_type, watermark_column) VALUES
+('manufacturing_units', 'POSTGRES_NEON', 'manufacturing_units', 'dim_manufacturing_units', 'FULL_OVERWRITE', NULL, NULL, NULL),
+('products', 'POSTGRES_NEON', 'products', 'dim_products', 'INCREMENTAL_MERGE', 'product_id', 1, 'updated_at'),
+('equipments', 'ADLS_CSV', 'equipments', 'dim_equipments', 'FULL_OVERWRITE', NULL, NULL, NULL),
+('component_production', 'POSTGRES_NEON', 'component_production', 'fact_component_production', 'INCREMENTAL_MERGE', 'component_run_id', 2, 'updated_at'),
+('vehicle_assembly', 'ADLS_CSV', 'vehicle_assembly', 'fact_vehicle_assembly', 'INCREMENTAL_MERGE', 'assembly_id', 2, 'updated_at'),
+('sensor_streams', 'POSTGRES_NEON', 'sensor_streams', 'fact_sensor_streams', 'INCREMENTAL_APPEND', NULL, NULL, 'timestamp');
+
+
+-- ============================================================================
+-- 2. WATERMARK / STATE MANAGEMENT TABLE
+-- ============================================================================
+CREATE TABLE adg.etl_pipeline_watermarks (
+    watermark_id INT IDENTITY(1,1) PRIMARY KEY,
+    table_id INT FOREIGN KEY REFERENCES adg.etl_source_metadata(table_id),
+    last_watermark_value VARCHAR(100) NOT NULL,
+    last_sync_utc DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+    CONSTRAINT UQ_adg_table_watermark UNIQUE (table_id)
+);
+
+-- Seed initial watermarks for incremental tables
+INSERT INTO adg.etl_pipeline_watermarks (table_id, last_watermark_value) VALUES
+(2, '2026-11-01 00:00:00.000'), -- products (SCD Type 1)
+(4, '2026-11-01 00:00:00.000'), -- component_production (SCD Type 2)
+(5, '2026-11-01 00:00:00.000'), -- vehicle_assembly (SCD Type 2)
+(6, '2026-11-01 00:00:00.000'); -- sensor_streams (Append)
+
+
+-- ============================================================================
+-- 3. EXECUTION AUDIT & LOGGING TABLE
+-- ============================================================================
+CREATE TABLE adg.etl_pipeline_execution_log (
+    run_id INT IDENTITY(1,1) PRIMARY KEY,
+    table_id INT FOREIGN KEY REFERENCES adg.etl_source_metadata(table_id),
+    pipeline_name VARCHAR(100) NOT NULL,
+    stage VARCHAR(50) NOT NULL, -- e.g., 'BRONZE', 'SILVER', 'GOLD'
+    status VARCHAR(30) NOT NULL CHECK (status IN ('RUNNING', 'SUCCESS', 'FAILED')),
+    rows_extracted INT DEFAULT 0,
+    rows_loaded INT DEFAULT 0,
+    rows_inserted INT DEFAULT 0,  -- Tracks new records added (Inserts / Appends)
+    rows_updated INT DEFAULT 0,   -- Tracks existing records modified (Upserts / SCD Type 1)
+    watermark_start VARCHAR(100) NULL,
+    watermark_end VARCHAR(100) NULL,
+    error_message VARCHAR(MAX) NULL,
+    started_at DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+    completed_at DATETIME2 NULL
+);

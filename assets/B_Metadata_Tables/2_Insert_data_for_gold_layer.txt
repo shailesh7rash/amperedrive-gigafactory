@@ -1,0 +1,12 @@
+-- Data for gold layer
+
+INSERT INTO adg.etl_source_metadata (table_name, source_system, source_path_or_table, target_table_name, load_type, merge_key, scd_type, watermark_column) 
+
+VALUES
+
+('dim_equipment', 'SILVER_LAYER', 'gold_dim_equipment', 'gold_dim_equipment', 'FULL_OVERWRITE', NULL, NULL, NULL),
+('dim_plant', 'SILVER_LAYER', 'gold_dim_plant', 'gold_dim_plant', 'FULL_OVERWRITE', NULL, NULL, NULL),
+('dim_product', 'SILVER_LAYER', 'gold_dim_product', 'gold_dim_product', 'FULL_OVERWRITE', NULL, NULL, NULL),
+('fact_component_production', 'SILVER_LAYER', 'gold_fact_component_production', 'gold_fact_component_production', 'FULL_OVERWRITE', NULL, NULL, NULL),
+('fact_equipment_telemetry_hourly', 'SILVER_LAYER', 'gold_fact_equipment_telemetry_hourly', 'gold_fact_equipment_telemetry_hourly', 'FULL_OVERWRITE', NULL, NULL, NULL),
+('fact_vehicle_assembly', 'SILVER_LAYER', 'gold_fact_vehicle_assembly', 'gold_fact_vehicle_assembly', 'FULL_OVERWRITE', NULL, NULL, NULL)
