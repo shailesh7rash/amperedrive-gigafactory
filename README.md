@@ -1,4 +1,4 @@
-# AmpereDrive Giga — EV Manufacturing & Telemetry Data Platform
+# AmpereDrive Gigafactory Data Integration and Analytics
 
 An end-to-end, metadata-driven Azure and Databricks lakehouse platform built to unify global EV manufacturing operations, vehicle assembly tracking, and high-frequency IoT equipment telemetry into analytics-ready datasets.
 
@@ -49,3 +49,15 @@ The platform follows a scalable **Medallion Architecture (`Bronze` → `Silver` 
 <p align="center">
   <img src="assets/source_tables_ER.jpg" alt="Source ER" width="100%" />
 </p>
+
+---
+
+## 📧 Status Report - Gmail
+
+<p align="center">
+  <img src="assets/Gmail_One.jpg" alt="Gmail One" width="100%" />
+  <img src="assets/Gmail_Two.jpg" alt="Gmail Two" width="100%" />
+</p>
+
+---
+
