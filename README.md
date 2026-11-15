@@ -1,18 +1,7 @@
 # AmpereDrive Giga — EV Manufacturing & Telemetry Data Platform
 
-<p align="left">
-  <img src="https://shields.io" alt="Microsoft Azure" />
-  <img src="https://shields.io" alt="Databricks" />
-  <img src="https://shields.io" alt="Azure Data Factory" />
-  <img src="https://shields.io" alt="Apache Spark" />
-  <img src="https://shields.io" alt="Delta Lake" />
-  <img src="https://shields.io" alt="PostgreSQL" />
-  <img src="https://shields.io" alt="Azure SQL DB" />
-  <img src="https://shields.io" alt="Python" />
-  <img src="https://shields.io" alt="GitHub CI/CD" />
-</p>
-
 An end-to-end, metadata-driven Azure and Databricks lakehouse platform built to unify global EV manufacturing operations, vehicle assembly tracking, and high-frequency IoT equipment telemetry into analytics-ready datasets.
+
 
 <p align="center">
   <img src="assets/AmpereDrive%20Giga%20Architecture.png" alt="AmpereDrive Giga Architecture" width="100%" />
@@ -42,31 +31,6 @@ The platform follows a scalable **Medallion Architecture (`Bronze` → `Silver` 
 * **Hybrid Load Patterns:** Seamlessly handles full snapshots, watermark-based incremental merges (SCD Type 1 & Type 2), and high-volume append-only IoT streams.
 * **Built-In Data Quality Guardrails:** Enforces automated validation checks (referential integrity, duplicate prevention, and cost/yield bounds) before promoting data to the Gold layer.
 * **End-to-End Observability:** Tracks row counts, execution durations, and failure states per pipeline run, triggering automated status alerts via Azure Logic Apps.
-
----
-
-## 📊 Business Insights Enabled
-
-* **Component Fabrication Efficiency:** Tracks production runs, scrap costs, cycle-time variances, and First-Pass Yield (FPY) across global plants.
-* **EV Vehicle Assembly Tracking:** Monitors end-to-end build durations, assembly line throughput, and quality pass rates by VIN and vehicle model.
-* **Equipment Health & Telemetry:** Aggregates high-frequency IoT sensor data into hourly temperature, vibration, and power consumption metrics for predictive maintenance.
-* **Conversational BI:** Empowers plant managers to query manufacturing KPIs in plain English using **Databricks Genie Agents**.
-
----
-
-## 📁 Repository Structure
-
-```text
-amperedrive-gigafactory/
-├── assets/             # Architecture diagrams and visual documentation
-├── databricks/         # PySpark & SQL notebooks for Bronze, Silver, and Gold transformations
-├── dataset/            # Azure Data Factory dataset definitions
-├── factory/            # Azure Data Factory global configuration
-├── linkedService/      # Azure Data Factory connection definitions (PostgreSQL, ADLS, SQL DB, Databricks)
-├── pipeline/           # Metadata-driven ADF ingestion and orchestration pipelines
-├── publish_config.json # ADF CI/CD publishing configuration
-└── README.md
-```
 
 ---
 
