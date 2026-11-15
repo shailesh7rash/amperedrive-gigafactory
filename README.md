@@ -41,3 +41,11 @@ The platform follows a scalable **Medallion Architecture (`Bronze` → `Silver` 
 * **Data Engineering & Governance:** Azure Databricks, Apache Spark / PySpark, Delta Lake, Unity Catalog
 * **Analytics & AI:** Databricks AI/BI Dashboards, Databricks Genie
 * **DevOps:** GitHub (CI/CD integration for ADF & Databricks)
+
+---
+
+## 🧬 Source ER
+
+<p align="center">
+  <img src="assets/source_tables_ER.jpg" alt="Source ER" width="100%" />
+</p>
